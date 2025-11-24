@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Criador de Quiz para estudo</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 0; 
+            padding: 0; 
+            /* background-color: #f4f4f4;  */
+            transition: background-color 0.5s;
+            font-size: 16px; 
+            height: 100vh; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+
+            /* Animated dark pulsating gradient background */
+            background: linear-gradient(270deg, #0a0a23, #1a1a40, #121224, #222258);
+            background-size: 800% 800%;
+            animation: pulsateGradient 15s ease infinite;
+        }
+        .container { 
+            max-width: 900px; 
+            background: white; 
+            padding: 20px; 
+            border-radius: 8px; 
+            box-shadow: 0 0 10px rgba(0,0,0,0.1); 
+            min-height: 500px; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center; 
+        }
+        h1, h2 { color: #333; text-align: center;}
+        textarea { width: 100%; height: 300px; padding: 10px; margin: 10px 0; box-sizing: border-box; }
+        input, button { display: block; margin: 10px 0; padding: 10px; width: 100%; max-width: 300px; box-sizing: border-box; }
+        button { background: #0064cc; color: white; border: none; cursor: pointer; border-radius: 20px; }
+        button:hover { background: #0056b3; }
+        button:active { background: #3399ff; }
+
+        /* Button states for quiz answer feedback */
+        button.correct { background-color: green !important; }
+        button.incorrect { background-color: red !important; }
+        .quiz { display: none; }
+        .question { text-align: center; margin-bottom: 20px; }
+        .options { text-align: left; margin-top: 1px; }
+        .options label { display: flex; align-items: center; margin-bottom: 3px; gap: 4px; justify-content: flex-start; }
+        .options input[type="radio"] { margin-right: 4px; width: 10px; height: 10px; }
+        .feedback { 
+            /* Remove fixed positioning to restrict inside container */
+            /* position: fixed; */
+            /* top: 0; */
+            /* left: 0; */
+            /* width: 100%; */
+            /* height: 100%; */
+            display: none; 
+            justify-content: center; 
+            align-items: center; 
+            font-size: 2em; 
+            font-weight: bold; 
+            color: white; 
+            z-index: 10; 
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 15px;
+            min-height: 60px;
+            max-width: 400px;
+            text-align: center;
+        }
+        .correct { background-color: green; }
+        .incorrect { background-color: red; }
+        .result { margin-top: 20px; font-weight: bold; text-align: center; }
+
+        /* Contadores */
+        .counter { position: absolute; background: rgba(255, 255, 255, 0.9); padding: 5px 10px; border-radius: 5px; font-weight: bold; z-index: 5; display: none; }
+        .question-counter { top: 10px; left: 10px; }
+        .score-counter { top: 10px; right: 10px; }
+
+
+        /* Responsividade */
+        @media (max-width: 768px) { /* Mobile */
+            body { padding: 10px; font-size: 14px; }
+            .container { max-width: 100%; padding: 15px; min-height: 400px; }
+            h1 { font-size: 1.5rem; }
+            h2 { font-size: 1.2rem; }
+            textarea { height: 200px; }
+            input, button { max-width: 100%; padding: 12px; font-size: 1rem; }
+            .question { margin-bottom: 15px; }
+            .options label { font-size: 1rem; }
+            .feedback { font-size: 1.5rem; }
+            .result { font-size: 1.1rem; }
+            .counter { font-size: 0.9rem; padding: 3px 8px; }
+        }
+
+        @media (min-width: 769px) and (max-width: 1024px) { /* Tablet */
+            body { padding: 15px; font-size: 15px; }
+            .container { max-width: 90%; padding: 18px; }
+            h1 { font-size: 1.8rem; }
+            h2 { font-size: 1.4rem; }
+            textarea { height: 250px; }
+            input, button { max-width: 350px; padding: 11px; }
+            .question { margin-bottom: 18px; }
+            .options label { font-size: 1.1rem; }
+            .feedback { font-size: 1.8rem; }
+            .result { font-size: 1.2rem; }
+            .counter { font-size: 1rem; }
+        }
+
+        @media (min-width: 1025px) { /* Desktop */
+            /* Mantém o padrão */
+        }
+
+        @keyframes pulsateGradient {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container" style="position: relative;">
+        <div class="counter question-counter" id="question-counter"></div>
+        <div class="counter score-counter" id="score-counter"></div>
+        <h1>Criador de Quiz para estudo</h1>
+        <div id="form-section">
+            <h2>Cole o Texto do Questionário</h2>
+            <textarea id="quiz-text" placeholder="Cole aqui o texto completo do questionário (com perguntas, opções e respostas)..."></textarea>
+            <button onclick="processAndGenerateQuiz()">Processar e Gerar Quiz</button>
+        </div>
+        <div id="quiz-section" class="quiz">
+            <div id="quiz-question"></div>
+            <button id="submit-btn" onclick="submitAnswer()">Responder</button>
+            <div id="result" class="result"></div>
+        </div>
+        <div id="feedback" class="feedback"></div>
+    </div>
+
+    <script>
+        let questions = [];
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let errors = 0;
+
+        function processAndGenerateQuiz() {
+            const text = document.getElementById('quiz-text').value;
+            if (!text.trim()) {
+                alert('Cole o texto do questionário!');
+                return;
+            }
+
+            questions = [];
+            const lines = text.split('\n').map(line => line.trim()).filter(line => line);
+
+            let isMultipleChoice = false;
+            let currentQuestion = null;
+            let options = [];
+            let correctAnswer = null;
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+
+                if (line.includes('PARTE 1 – Questões de Múltipla Escolha')) {
+                    isMultipleChoice = true;
+                    continue;
+                }
+                if (line.includes('PARTE 2 – Questões Abertas')) {
+                    isMultipleChoice = false;
+                    continue;
+                }
+
+                if (isMultipleChoice) {
+                    const questionMatch = line.match(/^(\d+)\)\s*(.+)$/);
+                    if (questionMatch) {
+                        if (currentQuestion && options.length === 4 && correctAnswer !== null) {
+                            questions.push({
+                                question: currentQuestion,
+                                options: options,
+                                correct: correctAnswer,
+                                type: 'multiple'
+                            });
+                        }
+                        currentQuestion = questionMatch[2];
+                        options = [];
+                        correctAnswer = null;
+                    } else if (line.match(/^[a-d]\)\s*(.+)$/)) {
+                        const optionMatch = line.match(/^[a-d]\)\s*(.+)$/);
+                        options.push(optionMatch[1]);
+                    } else if (line.startsWith('R: ')) {
+                        const answerMatch = line.match(/R:\s*([a-d])\)/);
+                        if (answerMatch) {
+                            correctAnswer = ['a', 'b', 'c', 'd'].indexOf(answerMatch[1]);
+                        }
+                    }
+                } else {
+                    const questionMatch = line.match(/^(\d+)\)\s*(.+)$/);
+                    if (questionMatch) {
+                        if (currentQuestion && correctAnswer) {
+                            questions.push({
+                                question: currentQuestion,
+                                correct: correctAnswer,
+                                type: 'open'
+                            });
+                        }
+                        currentQuestion = questionMatch[2];
+                        correctAnswer = null;
+                    } else if (line.startsWith('R: ')) {
+                        correctAnswer = line.replace('R: ', '').trim();
+                    }
+                }
+            }
+
+            if (currentQuestion) {
+                if (isMultipleChoice && options.length === 4 && correctAnswer !== null) {
+                    questions.push({
+                        question: currentQuestion,
+                        options: options,
+                        correct: correctAnswer,
+                        type: 'multiple'
+                    });
+                } else if (!isMultipleChoice && correctAnswer) {
+                    questions.push({
+                        question: currentQuestion,
+                        correct: correctAnswer,
+                        type: 'open'
+                    });
+                }
+            }
+
+            if (questions.length === 0) {
+                alert('Nenhuma pergunta válida encontrada no texto!');
+                return;
+            }
+
+            currentQuestionIndex = 0;
+            score = 0;
+            errors = 0;
+            document.getElementById('form-section').style.opacity = '0';
+            setTimeout(() => {
+                document.getElementById('form-section').style.display = 'none';
+                document.getElementById('quiz-section').style.display = 'block';
+                document.getElementById('quiz-section').style.opacity = '1';
+                document.getElementById('result').innerHTML = '';
+                document.getElementById('question-counter').style.display = 'block';
+                document.getElementById('score-counter').style.display = 'block';
+                showQuestion();
+            }, 3000); // Fade out do form
+        }
+
+        function showQuestion() {
+            if (currentQuestionIndex >= questions.length) {
+                document.getElementById('quiz-question').style.opacity = '0';
+                setTimeout(() => {
+                    document.getElementById('quiz-question').innerHTML = '';
+                    document.getElementById('submit-btn').style.display = 'none';
+                    document.getElementById('question-counter').style.display = 'none';
+                    document.getElementById('score-counter').style.display = 'none';
+                    document.getElementById('result').innerHTML = `Quiz finalizado! Você acertou ${score} de ${questions.length} perguntas.`;
+                    document.getElementById('result').style.opacity = '1';
+                }, 3000);
+                return;
+            }
+
+            const q = questions[currentQuestionIndex];
+            const questionDiv = document.getElementById('quiz-question');
+            questionDiv.style.opacity = '0';
+            setTimeout(() => {
+                if (q.type === 'multiple') {
+                    questionDiv.innerHTML = `
+                        <div class="question">
+                            <p><strong>${currentQuestionIndex + 1}. ${q.question}</strong></p>
+                            <div class="options">
+                                ${q.options.map((opt, i) => `<label><input type="radio" name="q" value="${i}"> ${String.fromCharCode(97 + i)}) ${opt}</label>`).join('')}
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    questionDiv.innerHTML = `
+                        <div class="question">
+                            <p><strong>${currentQuestionIndex + 1}. ${q.question}</strong></p>
+                            <input type="text" id="open-answer" placeholder="Digite sua resposta aqui" style="text-align: left; width: 100%; max-width: 400px; box-sizing: border-box;">
+                        </div>
+                    `;
+                }
+
+                // Atualizar contadores
+                document.getElementById('question-counter').innerHTML = `Pergunta ${currentQuestionIndex + 1} de ${questions.length}`;
+                document.getElementById('score-counter').innerHTML = `Acertos: ${score} | Erros: ${errors}`;
+
+                questionDiv.style.opacity = '1';
+            }, 3000); // Fade in da nova pergunta
+        }
+
+        function submitAnswer() {
+            const q = questions[currentQuestionIndex];
+            let isCorrect = false;
+            const submitBtn = document.getElementById('submit-btn');
+
+            if (q.type === 'multiple') {
+                const selected = document.querySelector('input[name="q"]:checked');
+                if (selected && parseInt(selected.value) === q.correct) {
+                    isCorrect = true;
+                }
+            } else {
+                const userAnswer = document.getElementById('open-answer').value.trim().toLowerCase();
+                const correctAnswer = q.correct.toLowerCase().replace(/\s+/g, ' ');
+                if (userAnswer === correctAnswer) {
+                    isCorrect = true;
+                }
+            }
+
+            if (isCorrect) {
+                score++;
+                submitBtn.textContent = 'Você acertou!';
+                submitBtn.classList.add('correct');
+                submitBtn.classList.remove('incorrect');
+            } else {
+                errors++;
+                submitBtn.textContent = 'Você errou.';
+                submitBtn.classList.add('incorrect');
+                submitBtn.classList.remove('correct');
+            }
+
+            submitBtn.disabled = true;
+
+            setTimeout(() => {
+                submitBtn.textContent = 'Responder';
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('correct');
+                submitBtn.classList.remove('incorrect');
+                currentQuestionIndex++;
+                showQuestion();
+            }, 1500); // Feedback por 1.5 segundos
+        }
+    </script>
+</body>
+</html>
